@@ -70,6 +70,8 @@ public class MethodParser {
 	
 	private static String[] textArray = {MediaType.TEXT_HTML_VALUE+ ";charset=UTF-8"};
 	private static String[] jsonArray = { MediaType.APPLICATION_JSON_UTF8_VALUE };
+	
+	private static EvaluatingVisitor evaluatingVisitor = new EvaluatingVisitor();
 
 	private static Map<String, String> requestMethodCache = new HashMap<String, String>() {
 		{
@@ -155,14 +157,14 @@ public class MethodParser {
 						if (annotationName.equals(RequestParam.class.getName())) {
 							AnnotationValue annotationValue = paramAnnotation.getProperty("value");
 							if (annotationValue != null) {
-								alias = (String) annotationValue.accept(new EvaluatingVisitor());
+								alias = getAnnotationValue(annotationValue, javaClass, classStructs);
 							}
 						}
 						if (annotationName.equals(PathVariable.class.getName())) {
 							in = "path";
 							AnnotationValue annotationValue = paramAnnotation.getProperty("value");
 							if (annotationValue != null) {
-								alias = (String) annotationValue.accept(new EvaluatingVisitor());
+								alias = getAnnotationValue(annotationValue, javaClass, classStructs);
 							}
 						} else if (annotationName.equals(RequestBody.class.getName())) {
 							requestBody = true;
@@ -171,7 +173,7 @@ public class MethodParser {
 							in = "header";
 							AnnotationValue annotationValue = paramAnnotation.getProperty("value");
 							if (annotationValue != null) {
-								alias = (String) annotationValue.accept(new EvaluatingVisitor());
+								alias = getAnnotationValue(annotationValue, javaClass, classStructs);
 							}
 						}
 					}
@@ -220,7 +222,6 @@ public class MethodParser {
 				parameterData.setSchema(schema);
 			}
 			MethodParameterData[] methodParameters = methodParameterMap.values().toArray(new MethodParameterData[0]);
-			Map<String, Object> httpMethodMap = new LinkedHashMap<>();
 			Map<String, Object> elements = new LinkedHashMap<>();
 			elements.put("tags", new String[] { javaClass.getBinaryName() });
 			DocletTag descriptionTag = method.getTagByName("Description");
@@ -391,6 +392,41 @@ public class MethodParser {
 			return method;
 		}
 		return method.substring(index + 1, method.length());
+	}
+	
+	public static String getAnnotationValue(AnnotationValue annotationValue, JavaClass javaClass,
+			Map<String, ClassStruct> classStructs) {
+		String value = null;
+		if (annotationValue != null) {
+			String parameterValue = (String) annotationValue.getParameterValue();
+			int index = parameterValue.lastIndexOf(".");
+			if (index > 0) {
+				String className = parameterValue.substring(0, index);
+				String fieldName = parameterValue.substring(index + 1, parameterValue.length());
+				String samePackageClassName = javaClass.getPackageName() + "." + className;
+				ClassStruct classStruct = classStructs.get(samePackageClassName);
+				if (classStruct == null) {
+					List<String> packages = classStructs.get(javaClass.getFullyQualifiedName()).getImportPackages();
+					for (String classPackage : packages) {
+						if (classPackage.endsWith(className)) {
+							classStruct = classStructs.get(classPackage);
+							if (classStruct != null) {
+								break;
+							}
+						}
+					}
+				}
+				if (classStruct != null) {
+					value = classStruct.getJavaClass().getFieldByName(fieldName).getInitializationExpression()
+							.replaceAll("\"", "");
+				}
+			}
+			if (value == null) {
+				value = (String) annotationValue.accept(evaluatingVisitor);
+			}
+		}
+
+		return value;
 	}
 
 }

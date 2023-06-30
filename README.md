@@ -62,25 +62,26 @@ java -jar springcloud-open-api-generator-0.0.1.RELEASE.jar   /home/srchen/github
 
 运行后会生成demo-api.json(outPath配置的路径).
 
-
 #### 2.4 启动swagger-ui
 
-拉取docker镜像 
+拉取docker镜像
+
 ```shell
 docker pull swaggerapi/swagger-ui
 ```
 
 启动
+
 ```shell
 docker run -p 80:8080 -e BASE_URL=/swagger -e SWAGGER_JSON=/foo/demo-api.json -v /home/srchen/github/api-demo:/foo swaggerapi/swagger-ui
 ```
 
-访问 http://localhost/swagger 既可使用.
-
+访问 <http://localhost/swagger> 既可使用.
 
 #### 3. 已支持javaDoc的Tag/注解/对象
 
 ##### 3.1 JavaDoc的Tag
+
 1. @Description 用于类或方法的描述信息,支持放在类上或方法上.
 
 2. @param 用于方法参数对应的注释信息,只支持方法上.
@@ -88,21 +89,22 @@ docker run -p 80:8080 -e BASE_URL=/swagger -e SWAGGER_JSON=/foo/demo-api.json -v
 注释上有 @param userId 用户ID, 方法参数列表中的userId就会被备注为名字.
 
 例如:
+
 ```java
-	/**
-	 * 
-	* @Title: get 
-	* @author jackson.song 
-	* @date 2022年3月23日
-	* @Description 根据用户ID查询用户
-	* @param userId 用户ID
-	*
-	 */
-	@RequestMapping(value = "/user/get",method = RequestMethod.GET)
-	@ResponseBody
-	public User get(String userId){
-		return null;
-	}
+ /**
+  * 
+ * @Title: get 
+ * @author jackson.song 
+ * @date 2022年3月23日
+ * @Description 根据用户ID查询用户
+ * @param userId 用户ID
+ *
+  */
+ @RequestMapping(value = "/user/get",method = RequestMethod.GET)
+ @ResponseBody
+ public User get(String userId){
+  return null;
+ }
 
 ```
 
@@ -121,7 +123,7 @@ docker run -p 80:8080 -e BASE_URL=/swagger -e SWAGGER_JSON=/foo/demo-api.json -v
 6. @RequestBody 标识一个对象通过http body方式传入.
 
 7. @ResponseBody 标识返回对象.
-   
+
 ##### 3.3 方法参数列表支持的对象类型(dawdler-client-plug中支持的对象)
 
 1. MultipartFile 用于上传文件时使用的对象,可以搭配@param来做注释.
@@ -132,45 +134,44 @@ docker run -p 80:8080 -e BASE_URL=/swagger -e SWAGGER_JSON=/foo/demo-api.json -v
 
 4. BigDecimal 用于获取http请求参数,可以搭配@param来做注释.
 
-5. 自定义对象(通过@RequestBody标识时需要http body,如果没有@RequestBody标识,则自定义对象的属性会作为http param参数) 注释只支持在自定义对象中加入注解,注释采用/** 注释 **/ 例如:
+5. 自定义对象(通过@RequestBody标识时需要http body,如果没有@RequestBody标识,则自定义对象的属性会作为http param参数) 注释只支持在自定义对象中加入注解,注释采用/**注释**/ 例如:
 
 ```java
 public class User {
-	/**
-	 * 用户ID
-	 */
-	private Integer userId;
-	/**
-	 * 用户名
-	 */
-	private String userName;
-	/**
-	 * 地址
-	 */
-	private String address;
+ /**
+  * 用户ID
+  */
+ private Integer userId;
+ /**
+  * 用户名
+  */
+ private String userName;
+ /**
+  * 地址
+  */
+ private String address;
 
-	public Integer getUserId() {
-		return userId;
-	}
-	public void setUserId(Integer userId) {
-		this.userId = userId;
-	}
-	public String getUserName() {
-		return userName;
-	}
-	public void setUserName(String userName) {
-		this.userName = userName;
-	}
-	public String getAddress() {
-		return address;
-	}
-	public void setAddress(String address) {
-		this.address = address;
-	}
+ public Integer getUserId() {
+  return userId;
+ }
+ public void setUserId(Integer userId) {
+  this.userId = userId;
+ }
+ public String getUserName() {
+  return userName;
+ }
+ public void setUserName(String userName) {
+  this.userName = userName;
+ }
+ public String getAddress() {
+  return address;
+ }
+ public void setAddress(String address) {
+  this.address = address;
+ }
 }
 
 ```
-
 
 #### 4. 返回数据类型
 
@@ -183,5 +184,3 @@ public class User {
 4. List<类型>/Set<类型>/Collection<类型>/Vector<类型>
 
 5. 自定义类,支持泛型.
-
- 
