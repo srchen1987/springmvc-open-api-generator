@@ -101,34 +101,32 @@ public class WebApiGenerator {
 				classStructs.put(className, struct);
 			}
 			boolean isController = false;
-			JavaAnnotation requsetMappingAnnotation = null;
+			JavaAnnotation requestMappingAnnotation = null;
 			if (!javaClass.isInner() && !javaClass.isInterface() && !javaClass.isEnum() && !javaClass.isAbstract()
 					&& !javaClass.isAnnotation()) {
 				List<JavaAnnotation> classAnnotations = javaClass.getAnnotations();
 				for (JavaAnnotation classAnnotation : classAnnotations) {
 					if (RestController.class.getName().equals(classAnnotation.getType().getBinaryName())) {
 						isController = true;
-						requsetMappingAnnotation = classAnnotation;
+						requestMappingAnnotation = classAnnotation;
 					}
 					if (RequestMapping.class.getName().equals(classAnnotation.getType().getBinaryName())) {
-						requsetMappingAnnotation = classAnnotation;
+						requestMappingAnnotation = classAnnotation;
 					}
 				}
 			}
 			if (isController) {
 				ControllerData data = new ControllerData();
 				DocletTag docletTag = javaClass.getTagByName("Description");
-				String describe;
+				String summary =  javaClass.getComment();
 				if (docletTag != null) {
-					describe = docletTag.getValue();
-				} else {
-					describe = javaClass.getBinaryName();
+					summary += docletTag.getValue();
 				}
 				data.setName(javaClass.getBinaryName());
-				data.setDescription(describe);
+				data.setDescription(summary);
 				controllers.add(data);
 				MethodParser.generateMethodParamCode(rootMap, pathMap, classStructs, definitionsMap, javaClass,
-						requsetMappingAnnotation);
+						requestMappingAnnotation);
 			}
 
 		}
