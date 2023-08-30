@@ -51,6 +51,7 @@ import com.thoughtworks.qdox.model.JavaSource;
  * @email suxuan696@gmail.com
  */
 public class WebApiGenerator {
+
 	public static void generate(File file) throws IOException {
 		YAMLMapper yamlMapper = YAMLMapper.builder().build();
 		OpenApiConfig openApi = yamlMapper.readValue(file, OpenApiConfig.class);
@@ -108,7 +109,6 @@ public class WebApiGenerator {
 				for (JavaAnnotation classAnnotation : classAnnotations) {
 					if (RestController.class.getName().equals(classAnnotation.getType().getBinaryName())) {
 						isController = true;
-						requestMappingAnnotation = classAnnotation;
 					}
 					if (RequestMapping.class.getName().equals(classAnnotation.getType().getBinaryName())) {
 						requestMappingAnnotation = classAnnotation;
@@ -118,7 +118,7 @@ public class WebApiGenerator {
 			if (isController) {
 				ControllerData data = new ControllerData();
 				DocletTag docletTag = javaClass.getTagByName("Description");
-				String summary =  javaClass.getComment();
+				String summary = javaClass.getComment();
 				if (docletTag != null) {
 					summary += docletTag.getValue();
 				}

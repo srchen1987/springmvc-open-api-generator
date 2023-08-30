@@ -20,9 +20,6 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.web.multipart.MultipartFile;
-
-
 /**
  * @author jackson.song
  * @version V1.0

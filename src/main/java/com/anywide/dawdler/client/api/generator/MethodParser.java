@@ -26,7 +26,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -67,13 +71,12 @@ import com.thoughtworks.qdox.model.impl.DefaultJavaParameterizedType;
 public class MethodParser {
 
 	private static String[] allTypeArray = { "*/*" };
-	
-	private static String[] textArray = {MediaType.TEXT_HTML_VALUE+ ";charset=UTF-8"};
+	private static String[] textArray = { MediaType.TEXT_HTML_VALUE + ";charset=UTF-8" };
 	private static String[] jsonArray = { MediaType.APPLICATION_JSON_UTF8_VALUE };
-	
 	private static EvaluatingVisitor evaluatingVisitor = new EvaluatingVisitor();
 
 	private static Map<String, String> requestMethodCache = new HashMap<String, String>() {
+		private static final long serialVersionUID = 8332918465511505167L;
 		{
 			put("GET", "get");
 			put("POST", "post");
@@ -87,22 +90,23 @@ public class MethodParser {
 
 	public static void generateMethodParamCode(Map<String, Object> rootMap, Map<String, Object> pathMap,
 			Map<String, ClassStruct> classStructs, Map<String, Object> definitionsMap, JavaClass javaClass,
-			JavaAnnotation requsetMappingAnnotation) {
+			JavaAnnotation requestMappingAnnotation) {
 		List<JavaMethod> methods = javaClass.getMethods();
 		for (JavaMethod method : methods) {
 			List<JavaAnnotation> methodAnnotations = method.getAnnotations();
-			String[] requsetClassMappingArray = AnnotationUtils.getAnnotationStringArrayValue(requsetMappingAnnotation,
+			String[] requestClassMappingArray = AnnotationUtils.getAnnotationStringArrayValue(requestMappingAnnotation,
 					"value");
-			String[] requsetMappingArray = null;
+			String[] requestMappingArray = null;
 			List<String> httpMethods = new ArrayList<>(8);
 			boolean responseBody = false;
 			boolean requestBody = false;
 			for (JavaAnnotation annotation : methodAnnotations) {
-				if (ResponseBody.class.getName().equals(annotation.getType().getBinaryName())) {
+				String annotationName = annotation.getType().getBinaryName();
+				if (ResponseBody.class.getName().equals(annotationName)) {
 					responseBody = true;
 				}
-				if (RequestMapping.class.getName().equals(annotation.getType().getBinaryName())) {
-					requsetMappingArray = AnnotationUtils.getAnnotationStringArrayValue(annotation, "value");
+				if (RequestMapping.class.getName().equals(annotationName)) {
+					requestMappingArray = AnnotationUtils.getAnnotationStringArrayValue(annotation, "value");
 					Object annotationMethodObj = AnnotationUtils.getAnnotationObjectValue(annotation, "method");
 					if (annotationMethodObj == null) {
 						for (RequestMethod requestMethod : RequestMethod.values()) {
@@ -116,6 +120,18 @@ public class MethodParser {
 							httpMethods.add(requestMethodCache.get(getHttpMethod(httpMethod)));
 						}
 					}
+				} else if (PostMapping.class.getName().equals(annotationName)) {
+					requestMappingArray = AnnotationUtils.getAnnotationStringArrayValue(annotation, "value");
+					httpMethods.add(RequestMethod.POST.name().toLowerCase());
+				} else if (GetMapping.class.getName().equals(annotationName)) {
+					requestMappingArray = AnnotationUtils.getAnnotationStringArrayValue(annotation, "value");
+					httpMethods.add(RequestMethod.GET.name().toLowerCase());
+				} else if (DeleteMapping.class.getName().equals(annotationName)) {
+					requestMappingArray = AnnotationUtils.getAnnotationStringArrayValue(annotation, "value");
+					httpMethods.add(RequestMethod.DELETE.name().toLowerCase());
+				} else if (PutMapping.class.getName().equals(annotationName)) {
+					requestMappingArray = AnnotationUtils.getAnnotationStringArrayValue(annotation, "value");
+					httpMethods.add(RequestMethod.PUT.name().toLowerCase());
 				}
 			}
 			if (httpMethods.isEmpty()) {
@@ -156,25 +172,19 @@ public class MethodParser {
 						String annotationName = paramAnnotation.getType().getFullyQualifiedName();
 						if (annotationName.equals(RequestParam.class.getName())) {
 							AnnotationValue annotationValue = paramAnnotation.getProperty("value");
-							if (annotationValue != null) {
-								alias = getAnnotationValue(annotationValue, javaClass, classStructs);
-							}
+							alias = getAnnotationValue(annotationValue, javaClass, classStructs);
 						}
 						if (annotationName.equals(PathVariable.class.getName())) {
 							in = "path";
 							AnnotationValue annotationValue = paramAnnotation.getProperty("value");
-							if (annotationValue != null) {
-								alias = getAnnotationValue(annotationValue, javaClass, classStructs);
-							}
+							alias = getAnnotationValue(annotationValue, javaClass, classStructs);
 						} else if (annotationName.equals(RequestBody.class.getName())) {
 							requestBody = true;
 							in = "body";
 						} else if (annotationName.equals(RequestHeader.class.getName())) {
 							in = "header";
 							AnnotationValue annotationValue = paramAnnotation.getProperty("value");
-							if (annotationValue != null) {
-								alias = getAnnotationValue(annotationValue, javaClass, classStructs);
-							}
+							alias = getAnnotationValue(annotationValue, javaClass, classStructs);
 						}
 					}
 				}
@@ -197,7 +207,10 @@ public class MethodParser {
 						type = typeName;
 					}
 					boolean array = false;
-					if (type.endsWith("[]")) {
+					if (ClassTypeUtil.isArray(javaParameter.getType().getBinaryName())) {
+						type = ClassTypeUtil.getType0(javaParameter.getType());
+						array = true;
+					} else if (type.endsWith("[]")) {
 						type = type.substring(0, type.lastIndexOf("[]"));
 						array = true;
 					}
@@ -213,9 +226,23 @@ public class MethodParser {
 						} else {
 							schema.set$ref("#/definitions/" + type);
 						}
+					} else {
+						schema = new SchemaData();
+						required = true;
+						if (array) {
+							schema.setType("array");
+						}
+						ItemsData items = new ItemsData();
+						TypeData typeData = TypesConverter.getType(type);
+						if (typeData != null) {
+							items.setType(typeData.getType());
+							items.setFormat(typeData.getFormat());
+						}
+						schema.setItems(items);
 					}
 				} else {
-					ParserTypeData.convertion(typeName, parameterData, classStructs, methodParameterMap, false);
+					ParserTypeData.convertion(javaParameter.getType(), parameterData, classStructs, methodParameterMap,
+							false);
 				}
 				parameterData.setIn(in);
 				parameterData.setRequired(required);
@@ -225,7 +252,7 @@ public class MethodParser {
 			Map<String, Object> elements = new LinkedHashMap<>();
 			elements.put("tags", new String[] { javaClass.getBinaryName() });
 			DocletTag descriptionTag = method.getTagByName("Description");
-			String summary =  method.getComment();
+			String summary = method.getComment();
 			if (descriptionTag != null) {
 				summary += descriptionTag.getValue();
 			}
@@ -254,11 +281,11 @@ public class MethodParser {
 				FieldParser.parserFields(returnType, classStructs, definitionsMap, javaTypes);
 				elements.put("responses", getResponse(returnType, definitionsMap));
 			}
-			if (requsetMappingArray != null) {
-				for (String mapping : requsetMappingArray) {
-					if (requsetClassMappingArray != null) {
+			if (requestMappingArray != null) {
+				for (String mapping : requestMappingArray) {
+					if (requestClassMappingArray != null) {
 						int i = 0;
-						for (String classMapping : requsetClassMappingArray) {
+						for (String classMapping : requestClassMappingArray) {
 							pathMap.put(classMapping + mapping, createHttpMethod(httpMethods, elements, method, i++));
 						}
 					} else {
@@ -317,7 +344,7 @@ public class MethodParser {
 
 	public static List<JavaType> getActualTypeArguments(JavaType javaType) {
 		if (javaType == null) {
-			return Collections.EMPTY_LIST;
+			return Collections.emptyList();
 		}
 		return ((JavaParameterizedType) javaType).getActualTypeArguments();
 	}
@@ -381,6 +408,7 @@ public class MethodParser {
 		response.put("404", RESPONSE_404);
 		return response;
 	}
+
 	public static String getHttpMethod(String method) {
 		if (method == null) {
 			return null;
@@ -391,7 +419,7 @@ public class MethodParser {
 		}
 		return method.substring(index + 1, method.length());
 	}
-	
+
 	public static String getAnnotationValue(AnnotationValue annotationValue, JavaClass javaClass,
 			Map<String, ClassStruct> classStructs) {
 		String value = null;

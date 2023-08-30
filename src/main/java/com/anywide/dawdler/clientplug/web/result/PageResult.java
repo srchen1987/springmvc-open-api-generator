@@ -25,6 +25,7 @@ public class PageResult<T> extends BaseResult<T> {
 		super(data);
 		this.page = page;
 	}
+
 	public Page getPage() {
 		return page;
 	}
