@@ -6,9 +6,9 @@
 		<qdox.version>2.0.1</qdox.version>
 		<jackson-dataformat-yaml.version>2.12.0</jackson-dataformat-yaml.version>
 	</properties>
-	<groupId>dawdler</groupId>
-	<artifactId>springcloud-open-api-generator</artifactId>
-	<name>springcloud-open-api-generator</name>
+	<groupId>club.dawdler</groupId>
+	<artifactId>springmvc-open-api-generator</artifactId>
+	<name>springmvc-open-api-generator</name>
 	<version>0.0.1.RELEASE</version>
 	<dependencies>
 		<dependency>
