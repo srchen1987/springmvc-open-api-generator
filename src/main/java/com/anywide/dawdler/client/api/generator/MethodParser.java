@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -133,6 +134,9 @@ public class MethodParser {
 				} else if (PutMapping.class.getName().equals(annotationName)) {
 					requestMappingArray = AnnotationUtils.getAnnotationStringArrayValue(annotation, "value");
 					httpMethods.add(RequestMethod.PUT.name().toLowerCase());
+				} else if (PatchMapping.class.getName().equals(annotationName)) {
+					requestMappingArray = AnnotationUtils.getAnnotationStringArrayValue(annotation, "value");
+					httpMethods.add(RequestMethod.PATCH.name().toLowerCase());
 				}
 			}
 			if (httpMethods.isEmpty()) {

@@ -57,7 +57,7 @@ scanPath配置一定要配置正确,确保路径下有Controller(必须使用@Co
 #### 2.3 生成api文件
 
 ```shell
-java -jar springcloud-open-api-generator-0.0.1.RELEASE.jar   /home/srchen/github/api-demo/dawdler-web-api.yml
+java -jar springmvc-open-api-generator-0.0.1.RELEASE.jar   /home/srchen/github/api-demo/dawdler-web-api.yml
 ```
 
 运行后会生成demo-api.json(outPath配置的路径).
