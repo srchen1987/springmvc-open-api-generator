@@ -67,7 +67,7 @@ public class WebApiGenerator {
 		Map<String, Object> rootMap = new LinkedHashMap<String, Object>();
 		Map<String, Object> infoMap = new LinkedHashMap<String, Object>();
 		Map<String, Object> definitionsMap = new LinkedHashMap<String, Object>();
-		Map<String, Object> pathMap = new LinkedHashMap<String, Object>();
+		Map<String,Map<String, Object>> pathMap = new LinkedHashMap<>();
 		infoMap.put("version", openApi.getVersion());
 		infoMap.put("title", openApi.getTitle());
 		infoMap.put("description", openApi.getDescription());

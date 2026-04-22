@@ -75,6 +75,7 @@ public class MethodParser {
 	private static String[] allTypeArray = { "*/*" };
 	private static String[] textArray = { MediaType.TEXT_HTML_VALUE + ";charset=UTF-8" };
 	private static String[] jsonArray = { MediaType.APPLICATION_JSON_UTF8_VALUE };
+	private static String[] multipartArray	 = { MediaType.MULTIPART_FORM_DATA_VALUE};
 	private static EvaluatingVisitor evaluatingVisitor = new EvaluatingVisitor();
 
 	private static Map<String, String> requestMethodCache = new HashMap<String, String>() {
@@ -90,7 +91,7 @@ public class MethodParser {
 		}
 	};
 
-	public static void generateMethodParamCode(Map<String, Object> rootMap, Map<String, Object> pathMap,
+	public static void generateMethodParamCode(Map<String, Object> rootMap, Map<String, Map<String, Object>> pathMap,
 			Map<String, ClassStruct> classStructs, Map<String, Object> definitionsMap, JavaClass javaClass,
 			JavaAnnotation requestMappingAnnotation) {
 		List<JavaMethod> methods = javaClass.getMethods();
@@ -145,6 +146,7 @@ public class MethodParser {
 
 			Map<String, MethodParameterData> params = new LinkedHashMap<>();
 			Map<String, MethodParameterData> methodParameterMap = new LinkedHashMap<>();
+			boolean hasMultipart = false;
 			List<DocletTag> tags = method.getTags();
 			for (DocletTag tag : tags) {
 				if (tag.getName().equals("param")) {
@@ -167,9 +169,16 @@ public class MethodParser {
 
 			List<JavaParameter> javaParameters = method.getParameters();
 			for (JavaParameter javaParameter : javaParameters) {
+				if (javaParameter.getType().getFullyQualifiedName().equals("org.springframework.web.multipart.MultipartFile")) {
+					hasMultipart = true;
+					break;
+				}
+
+			}
+			for (JavaParameter javaParameter : javaParameters) {
 				List<JavaAnnotation> paramAnnotationList = javaParameter.getAnnotations();
 				String alias = null;
-				String in = "query";
+				String in =hasMultipart? "formData" : "query";
 				SchemaData schema = null;
 				boolean required = false;
 				if (!paramAnnotationList.isEmpty()) {
@@ -274,6 +283,8 @@ public class MethodParser {
 			}
 			if (requestBody) {
 				elements.put("consumes", jsonArray);
+			}else if(hasMultipart){
+				elements.put("consumes", multipartArray);
 			} else {
 				elements.put("consumes", allTypeArray);
 			}
@@ -291,10 +302,25 @@ public class MethodParser {
 					if (requestClassMappingArray != null) {
 						int i = 0;
 						for (String classMapping : requestClassMappingArray) {
-							pathMap.put(classMapping + mapping, createHttpMethod(httpMethods, elements, method, i++));
+							mapping = classMapping + mapping;
+							Map<String, Object> httpMethodMap = pathMap.get(mapping);
+							if (httpMethodMap != null) {
+								pathMap.put(mapping,
+										createHttpMethod(httpMethods, elements, method, mapping, httpMethodMap, i++));
+							} else {
+								pathMap.put(mapping,
+										createHttpMethod(httpMethods, elements, method, mapping, null, i++));
+							}
 						}
 					} else {
-						pathMap.put(mapping, createHttpMethod(httpMethods, elements, method, null));
+						Map<String, Object> httpMethodMap = pathMap.get(mapping);
+						if (httpMethodMap != null) {
+							pathMap.put(mapping,
+									createHttpMethod(httpMethods, elements, method, mapping, httpMethodMap, null));
+						} else {
+							pathMap.put(mapping, createHttpMethod(httpMethods, elements, method, mapping, null, null));
+						}
+
 					}
 
 				}
@@ -304,13 +330,16 @@ public class MethodParser {
 	}
 
 	private static Map<String, Object> createHttpMethod(List<String> httpMethods, Map<String, Object> elements,
-			JavaMethod method, Integer index) {
-		Map<String, Object> httpMethodMap = new LinkedHashMap<>();
+			JavaMethod method, String mapping, Map<String, Object> httpMethodMap, Integer index) {
+		if (httpMethodMap == null) {
+			httpMethodMap = new LinkedHashMap<>();
+		}
 		for (String httpMethod : httpMethods) {
 			Map<String, Object> elementsCopy = new LinkedHashMap<>();
 			elementsCopy.putAll(elements);
 			elementsCopy.put("operationId",
-					method.getName() + "Using" + httpMethod.toUpperCase() + (index == null ? "" : "_" + index));
+					method.getName() + "Using" + httpMethod.toUpperCase() + "_" + mapping
+							+ (index == null ? "" : "_" + index));
 			httpMethodMap.put(httpMethod, elementsCopy);
 		}
 		return httpMethodMap;
@@ -323,32 +352,32 @@ public class MethodParser {
 		List<JavaTypeVariable<JavaGenericDeclaration>> typeList = null;
 		Map<String, JavaType> innerJavaTypes = new HashMap<>();
 		try {
-			if(type instanceof DefaultJavaWildcardType) {
-				System.out.println(method+":"+" not support wildcard type <?> !\r\n");
+			if (type instanceof DefaultJavaWildcardType) {
+				System.out.println(method + ":" + " not support wildcard type <?> !\r\n");
 				return;
 			}
-			if(type instanceof DefaultJavaParameterizedType) {
+			if (type instanceof DefaultJavaParameterizedType) {
 				dt = (DefaultJavaParameterizedType) type;
-			typeList = dt.getTypeParameters();
-			actualTypeArguments = getActualTypeArguments(dt);
-			if (!typeList.isEmpty()) {
-				if(actualTypeArguments.size() != typeList.size()) {
-					System.out.println(method+":"+type+" not defined type "+typeList+" !\r\n");
-				}else {
-					for (int i = 0; i < typeList.size(); i++) {
-						parseType(method, actualTypeArguments.get(i), classStructs, definitionsMap, innerJavaTypes);
-						innerJavaTypes.put(typeList.get(i).getBinaryName(), actualTypeArguments.get(i));
+				typeList = dt.getTypeParameters();
+				actualTypeArguments = getActualTypeArguments(dt);
+				if (!typeList.isEmpty()) {
+					if (actualTypeArguments.size() != typeList.size()) {
+						System.out.println(method + ":" + type + " not defined type " + typeList + " !\r\n");
+					} else {
+						for (int i = 0; i < typeList.size(); i++) {
+							parseType(method, actualTypeArguments.get(i), classStructs, definitionsMap, innerJavaTypes);
+							innerJavaTypes.put(typeList.get(i).getBinaryName(), actualTypeArguments.get(i));
+						}
 					}
 				}
 			}
-		}
 			FieldParser.parserFields(type, classStructs, definitionsMap, innerJavaTypes);
 		} catch (Exception e) {
-			System.out.println(method+" failed");
+			System.out.println(method + " failed");
 			e.printStackTrace();
-			
+
 		}
-		
+
 	}
 
 	public static Map<String, JavaType> getActualTypesMap(JavaClass javaClass) {

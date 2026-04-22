@@ -17,6 +17,7 @@
 package com.anywide.dawdler.client.api.generator;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -93,8 +94,8 @@ public class FieldParser {
 			if (typeData == null) {
 				ClassStruct classStruct = classStructs.get(typeName);
 				if (classStruct != null) {
-					Map<String, Object> objMap = new HashMap<>();
-					Map<String, Object> propertiesMap = new HashMap<>();
+					Map<String, Object> objMap = new LinkedHashMap<>();
+					Map<String, Object> propertiesMap = new LinkedHashMap<>();
 					objMap.put("type", "object");
 					if (genericFullyQualifiedName.contains(">")) {
 						objMap.put("title", genericFullyQualifiedName/* .replaceAll("<", "«").replaceAll(">","»") */);
