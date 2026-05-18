@@ -35,7 +35,7 @@ import com.thoughtworks.qdox.model.JavaType;
 public class ParserTypeData {
 
 	public static void convertion(JavaType javaType, MethodParameterData parameterData,
-			Map<String, ClassStruct> classStructs, Map<String, MethodParameterData> params, boolean isArray) {
+			Map<String, ClassStruct> classStructs, Map<String, MethodParameterData> params, boolean isArray, String in) {
 		String typeName = javaType.getFullyQualifiedName();
 		boolean typeArray = typeName.endsWith("[]");
 		boolean collection = ClassTypeUtil.isArray(javaType.getBinaryName());
@@ -60,7 +60,7 @@ public class ParserTypeData {
 					if (params != null) {
 						params.remove(parameterData.getName());
 					}
-					FieldParser.parserFields(classStruct.getJavaClass(), classStructs, params, true);
+					FieldParser.parserFields(classStruct.getJavaClass(), classStructs, params, true, in);
 				}
 			}
 //			csv (default)	Comma-separated values.	foo,bar,baz
@@ -83,7 +83,7 @@ public class ParserTypeData {
 				}
 				ClassStruct classStruct = classStructs.get(typeName);
 				if (classStruct != null) {
-					FieldParser.parserFields(classStruct.getJavaClass(), classStructs, params, false);
+					FieldParser.parserFields(classStruct.getJavaClass(), classStructs, params, false, in);
 				}
 			}
 		}

@@ -46,7 +46,7 @@ import com.thoughtworks.qdox.model.impl.DefaultJavaParameterizedType;
 public class FieldParser {
 
 	public static void parserFields(JavaClass javaClass, Map<String, ClassStruct> classStructs,
-			Map<String, MethodParameterData> params, boolean isArray) {
+			Map<String, MethodParameterData> params, boolean isArray, String in) {
 		List<JavaField> fields = javaClass.getFields();
 		JavaClass superJavaClass = javaClass.getSuperJavaClass();
 		while (!superJavaClass.getBinaryName().equals("java.lang.Object")) {
@@ -60,10 +60,10 @@ public class FieldParser {
 				if (parameterData == null) {
 					parameterData = new MethodParameterData();
 					parameterData.setName(field.getName());
-					parameterData.setIn("query");
+					parameterData.setIn(in);
 					params.put(field.getName(), parameterData);
 					parameterData.setDescription(field.getComment());
-					ParserTypeData.convertion(field.getType(), parameterData, classStructs, params, isArray);
+					ParserTypeData.convertion(field.getType(), parameterData, classStructs, params, isArray, in);
 				}
 			}
 		}

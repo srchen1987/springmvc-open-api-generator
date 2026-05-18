@@ -256,7 +256,7 @@ public class MethodParser {
 					}
 				} else {
 					ParserTypeData.convertion(javaParameter.getType(), parameterData, classStructs, methodParameterMap,
-							false);
+							false, in);
 				}
 				parameterData.setIn(in);
 				parameterData.setRequired(required);
